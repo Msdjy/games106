@@ -81,11 +81,50 @@ public:
 		std::vector<Node*> children;
 		Mesh mesh;
 		glm::mat4 matrix;
+		glm::vec3           translation{};
+		glm::vec3           scale{1.0f};
+		glm::quat           rotation{};
+		int32_t             skin = -1;
 		~Node() {
 			for (auto& child : children) {
 				delete child;
 			}
 		}
+	};
+
+	/*
+		Skin structure
+	*/
+	struct Skin {
+		std::string name;
+		Node* skeletonRoot = nullptr;
+		std::vector<glm::mat4> inverseBindMatrices;
+		std::vector<Node*> joints;
+		vks::Buffer ssbo;
+		VkDescriptorSet descriptorSet;
+	};
+
+	/*
+		Animation related structures
+	*/
+	struct AnimationSampler {
+		std::string interpolation;
+		std::vector<float> inputs;
+		std::vector<glm::vec4> outputs;
+	};
+	struct AnimationChannel {
+		std::string path;
+		Node* node;
+		uint32_t samplerIndex;	
+	};
+	
+	struct Animation {
+		std::string name;
+		std::vector<AnimationSampler> samplers;
+		std::vector<AnimationChannel> channels;
+		float start = std::numeric_limits<float>::max();
+		float end = std::numeric_limits<float>::min();
+		float currentTime = 0.0f;
 	};
 
 	// A glTF material stores information in e.g. the texture that is attached to it and colors
@@ -115,6 +154,11 @@ public:
 	std::vector<Texture> textures;
 	std::vector<Material> materials;
 	std::vector<Node*> nodes;
+	std::vector<Animation> animations;
+	std::vector<Skin> skins;
+
+	uint32_t activateAnimation = 0;
+	
 
 	~VulkanglTFModel()
 	{
@@ -327,6 +371,71 @@ public:
 		}
 		else {
 			nodes.push_back(node);
+		}
+	}
+
+	// POI: Update the joint matrices from the current animation frame and pass them to the GPU
+	void updateJoints(VulkanglTFModel::Node *node)
+	{
+		if (node->skin > -1)
+		{
+			// // Update the joint matrices
+			// glm::mat4              inverseTransform = glm::inverse(getNodeMatrix(node));
+			// Skin                   skin             = skins[node->skin];
+			// size_t                 numJoints        = (uint32_t) skin.joints.size();
+			// std::vector<glm::mat4> jointMatrices(numJoints);
+			// for (size_t i = 0; i < numJoints; i++)
+			// {
+			// 	jointMatrices[i] = getNodeMatrix(skin.joints[i]) * skin.inverseBindMatrices[i];
+			// 	jointMatrices[i] = inverseTransform * jointMatrices[i];
+			// }
+			// // Update ssbo
+			// skin.ssbo.copyTo(jointMatrices.data(), jointMatrices.size() * sizeof(glm::mat4));
+		}
+
+		for (auto &child : node->children)
+		{
+			updateJoints(child);
+		}
+	}
+
+	void updateAnimation(float deltaTime){
+		// TODO
+
+		// deltaTime 
+		Animation &animation = animations[activateAnimation];
+		animation.currentTime += deltaTime;
+		if (animation.currentTime > animation.end) {
+			animation.currentTime -= animation.end;
+		}
+		// for channel
+		for (auto &channel : animation.channels) {
+			AnimationSampler &sampler = animation.samplers[channel.samplerIndex];
+			for (size_t i = 0; i < sampler.inputs.size() - 1; i++) {
+				// Get the input keyframe values for the current time stamp
+				if ((animation.currentTime >= sampler.inputs[i]) && (animation.currentTime <= sampler.inputs[i + 1])) {
+					// Calculate interpolation value based on timestamp, Update node, see next paragraph
+					float a = ( animation.currentTime - sampler.inputs[i] ) 
+							/ ( sampler.inputs[i + 1] - sampler.inputs[i]);
+
+					if (channel.path == "translation") {
+						channel.node->translation = glm::mix(sampler.outputs[i], sampler.outputs[i + 1], a);
+					}
+					else if (channel.path == "rotation") {
+						glm::quat q1;
+						glm::quat q2;
+						q1 = glm::quat(sampler.outputs[i]);
+						q2 = glm::quat(sampler.outputs[i + 1]);
+						channel.node->rotation = glm::quat(glm::slerp(q1, q2, a));
+					}
+					else if (channel.path == "scale") {
+						channel.node->scale = glm::mix(sampler.outputs[i], sampler.outputs[i + 1], a);
+					}
+				}
+			}
+		}
+		for (auto& node : nodes) {
+			updateJoints(node);
 		}
 	}
 
@@ -725,6 +834,7 @@ public:
 	{
 		VulkanExampleBase::prepare();
 		loadAssets();
+		// TODO bind
 		prepareUniformBuffers();
 		setupDescriptors();
 		preparePipelines();
@@ -734,9 +844,17 @@ public:
 
 	virtual void render()
 	{
+		
 		renderFrame();
 		if (camera.updated) {
 			updateUniformBuffers();
+		}
+
+		// TODO 动画
+		// POI: Advance animation
+		if (!paused)
+		{
+			glTFModel.updateAnimation(frameTimer);
 		}
 	}
 
