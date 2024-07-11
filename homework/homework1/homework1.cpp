@@ -44,8 +44,8 @@ public:
 		glm::vec3 normal;
 		glm::vec2 uv;
 		glm::vec3 color;
-		glm::vec4 jointIndices;
-		glm::vec4 jointWeights;
+		// glm::vec4 jointIndices;
+		// glm::vec4 jointWeights;
 	};
 
 	// Single vertex buffer for all primitives
@@ -87,7 +87,7 @@ public:
 		glm::vec3           translation{};
 		glm::vec3           scale{1.0f};
 		glm::quat           rotation{};
-		int32_t             skin = -1;
+		// int32_t             skin = -1;
 		~Node() {
 			for (auto& child : children) {
 				delete child;
@@ -99,17 +99,6 @@ public:
 		}
 	};
 
-	/*
-		Skin structure
-	*/
-	struct Skin {
-		std::string name;
-		Node* skeletonRoot = nullptr;
-		std::vector<glm::mat4> inverseBindMatrices;
-		std::vector<Node*> joints;
-		vks::Buffer ssbo;
-		VkDescriptorSet descriptorSet;
-	};
 
 	/*
 		Animation related structures
@@ -162,7 +151,7 @@ public:
 	std::vector<Material> materials;
 	std::vector<Node*> nodes;
 	std::vector<Animation> animations;
-	std::vector<Skin> skins;
+	// std::vector<Skin> skins;
 
 	uint32_t activateAnimation = 0;
 	
@@ -258,23 +247,27 @@ public:
 		node->matrix = glm::mat4(1.0f);
 		node->parent = parent;
 		node->index = nodeIndex;
-		node->skin = inputNode.skin;
+		// node->skin = inputNode.skin;
 
 		// Get the local node matrix
 		// It's either made up from translation, rotation, scale or a 4x4 matrix
 		if (inputNode.translation.size() == 3) {
+			//node->matrix = glm::translate(node->matrix, glm::vec3(glm::make_vec3(inputNode.translation.data())));
 			node->translation = glm::make_vec3(inputNode.translation.data());
 		}
 		if (inputNode.rotation.size() == 4) {
-			glm::quat q    = glm::make_quat(inputNode.rotation.data());
-			node->rotation = glm::mat4(q);
+			glm::quat q = glm::make_quat(inputNode.rotation.data());
+			//node->matrix *= glm::mat4(q);
+			node->rotation = q;
 		}
 		if (inputNode.scale.size() == 3) {
+			//node->matrix = glm::scale(node->matrix, glm::vec3(glm::make_vec3(inputNode.scale.data())));
 			node->scale = glm::make_vec3(inputNode.scale.data());
 		}
 		if (inputNode.matrix.size() == 16) {
 			node->matrix = glm::make_mat4x4(inputNode.matrix.data());
 		};
+
 
 		// Load node's children
 		if (inputNode.children.size() > 0) {
@@ -293,14 +286,14 @@ public:
 				uint32_t firstIndex = static_cast<uint32_t>(indexBuffer.size());
 				uint32_t vertexStart = static_cast<uint32_t>(vertexBuffer.size());
 				uint32_t indexCount = 0;
-				bool hasSkin = false;
+				// bool hasSkin = false;
 				// Vertices
 				{
 					const float* positionBuffer = nullptr;
 					const float* normalsBuffer = nullptr;
 					const float* texCoordsBuffer = nullptr;
-					const uint16_t* jointIndicesBuffer = nullptr;
-					const float* jointWeightsBuffer = nullptr;
+					// const uint16_t* jointIndicesBuffer = nullptr;
+					// const float* jointWeightsBuffer = nullptr;
 					size_t vertexCount = 0;
 
 					// Get buffer data for vertex positions
@@ -325,19 +318,19 @@ public:
 					}
 					// POI: Get buffer data required for vertex skinning
 					// Get vertex joint indices
-					if (glTFPrimitive.attributes.find("JOINTS_0") != glTFPrimitive.attributes.end()) {
-						const tinygltf::Accessor& accessor = input.accessors[glTFPrimitive.attributes.find("JOINTS_0")->second];
-						const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
-						jointIndicesBuffer = reinterpret_cast<const uint16_t*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
-					}
-					// Get vertex joint weights
-					if (glTFPrimitive.attributes.find("WEIGHTS_0") != glTFPrimitive.attributes.end()) {
-						const tinygltf::Accessor& accessor = input.accessors[glTFPrimitive.attributes.find("WEIGHTS_0")->second];
-						const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
-						jointWeightsBuffer = reinterpret_cast<const float*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
-					}
+					// if (glTFPrimitive.attributes.find("JOINTS_0") != glTFPrimitive.attributes.end()) {
+					// 	const tinygltf::Accessor& accessor = input.accessors[glTFPrimitive.attributes.find("JOINTS_0")->second];
+					// 	const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
+					// 	jointIndicesBuffer = reinterpret_cast<const uint16_t*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+					// }
+					// // Get vertex joint weights
+					// if (glTFPrimitive.attributes.find("WEIGHTS_0") != glTFPrimitive.attributes.end()) {
+					// 	const tinygltf::Accessor& accessor = input.accessors[glTFPrimitive.attributes.find("WEIGHTS_0")->second];
+					// 	const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
+					// 	jointWeightsBuffer = reinterpret_cast<const float*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+					// }
 
-					hasSkin = (jointIndicesBuffer && jointWeightsBuffer);
+					// hasSkin = (jointIndicesBuffer && jointWeightsBuffer);
 
 					// Append data to model's vertex buffer
 					for (size_t v = 0; v < vertexCount; v++) {
@@ -346,8 +339,8 @@ public:
 						vert.normal = glm::normalize(glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
 						vert.uv = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
 						vert.color = glm::vec3(1.0f);
-						vert.jointIndices = hasSkin ? glm::vec4(glm::make_vec4(&jointIndicesBuffer[v * 4])) : glm::vec4(0.0f);
-						vert.jointWeights = hasSkin ? glm::vec4(glm::make_vec4(&jointWeightsBuffer[v * 4])) : glm::vec4(0.0f);
+						// vert.jointIndices = hasSkin ? glm::vec4(glm::make_vec4(&jointIndicesBuffer[v * 4])) : glm::vec4(0.0f);
+						// vert.jointWeights = hasSkin ? glm::vec4(glm::make_vec4(&jointWeightsBuffer[v * 4])) : glm::vec4(0.0f);
 						vertexBuffer.push_back(vert);
 					}
 				}
@@ -434,6 +427,7 @@ public:
 		return nodeFound;
 	}
 
+	/* 
 	void loadSkins(tinygltf::Model& input)
 	{
 		skins.resize(input.skins.size());
@@ -476,8 +470,10 @@ public:
 
 		}
 	}
+	*/
 
-	void loadAnimations(tinygltf::Model& input){
+	void loadAnimations(tinygltf::Model& input)
+	{
 		animations.resize(input.animations.size());
 
 		for (size_t i = 0; i < input.animations.size(); i++) {
@@ -560,46 +556,41 @@ public:
 		}
 	}
 
-
-
-
-
-	glm::mat4 getNodeMatrix(Node* node)
-	{
-		glm::mat4              nodeMatrix    = node->getLocalMatrix();
-		VulkanglTFModel::Node *currentParent = node->parent;
-		while (currentParent)
-		{
-			nodeMatrix    = currentParent->getLocalMatrix() * nodeMatrix;
-			currentParent = currentParent->parent;
-		}
-		return nodeMatrix;
-	}
+	// glm::mat4 getNodeMatrix(Node* node)
+	// {
+	// 	glm::mat4              nodeMatrix    = node->getLocalMatrix();
+	// 	VulkanglTFModel::Node *currentParent = node->parent;
+	// 	while (currentParent)
+	// 	{
+	// 		nodeMatrix    = currentParent->getLocalMatrix() * nodeMatrix;
+	// 		currentParent = currentParent->parent;
+	// 	}
+	// 	return nodeMatrix;
+	// }
 
 	// POI: Update the joint matrices from the current animation frame and pass them to the GPU
-	void updateJoints(VulkanglTFModel::Node *node)
-	{
-		if (node->skin > -1)
-		{
-			// Update the joint matrices
-			glm::mat4              inverseTransform = glm::inverse(getNodeMatrix(node));
-			Skin                   skin             = skins[node->skin];
-			size_t                 numJoints        = (uint32_t) skin.joints.size();
-			std::vector<glm::mat4> jointMatrices(numJoints);
-			for (size_t i = 0; i < numJoints; i++)
-			{
-				jointMatrices[i] = getNodeMatrix(skin.joints[i]) * skin.inverseBindMatrices[i];
-				jointMatrices[i] = inverseTransform * jointMatrices[i];
-			}
-			// Update ssbo
-			skin.ssbo.copyTo(jointMatrices.data(), jointMatrices.size() * sizeof(glm::mat4));
-		}
-
-		for (auto &child : node->children)
-		{
-			updateJoints(child);
-		}
-	}
+	// void updateJoints(VulkanglTFModel::Node *node)
+	// {
+	// 	if (node->skin > -1)
+	// 	{
+	// 		// Update the joint matrices
+	// 		glm::mat4              inverseTransform = glm::inverse(getNodeMatrix(node));
+	// 		Skin                   skin             = skins[node->skin];
+	// 		size_t                 numJoints        = (uint32_t) skin.joints.size();
+	// 		std::vector<glm::mat4> jointMatrices(numJoints);
+	// 		for (size_t i = 0; i < numJoints; i++)
+	// 		{
+	// 			jointMatrices[i] = getNodeMatrix(skin.joints[i]) * skin.inverseBindMatrices[i];
+	// 			jointMatrices[i] = inverseTransform * jointMatrices[i];
+	// 		}
+	// 		// Update ssbo
+	// 		skin.ssbo.copyTo(jointMatrices.data(), jointMatrices.size() * sizeof(glm::mat4));
+	// 	}
+	// 	for (auto &child : node->children)
+	// 	{
+	// 		updateJoints(child);
+	// 	}
+	// }
 
 	void updateAnimation(float deltaTime){
 		// TODO
@@ -625,19 +616,24 @@ public:
 					}
 					else if (channel.path == "rotation") {
 						glm::quat q1;
+						q1.x = sampler.outputs[i].x;
+						q1.y = sampler.outputs[i].y;
+						q1.z = sampler.outputs[i].z;
+						q1.w = sampler.outputs[i].w;
+
 						glm::quat q2;
-						q1 = glm::quat(sampler.outputs[i]);
-						q2 = glm::quat(sampler.outputs[i + 1]);
-						channel.node->rotation =  glm::normalize(glm::quat(glm::slerp(q1, q2, a)));
+						q2.x = sampler.outputs[i + 1].x;
+						q2.y = sampler.outputs[i + 1].y;
+						q2.z = sampler.outputs[i + 1].z;
+						q2.w = sampler.outputs[i + 1].w;
+
+						channel.node->rotation = glm::normalize(glm::slerp(q1, q2, a));
 					}
 					else if (channel.path == "scale") {
 						channel.node->scale = glm::mix(sampler.outputs[i], sampler.outputs[i + 1], a);
 					}
 				}
 			}
-		}
-		for (auto& node : nodes) {
-			updateJoints(node);
 		}
 	}
 
@@ -648,19 +644,25 @@ public:
 	// Draw a single node including child nodes (if present)
 	void drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VulkanglTFModel::Node* node)
 	{
-		if (node->mesh.primitives.size() > 0) {
+		if (node->mesh.primitives.size() > 0) 
+		{
 			// Pass the node's matrix via push constants
 			// Traverse the node hierarchy to the top-most parent to get the final matrix of the current node
-			glm::mat4 nodeMatrix = node->matrix;
+			// glm::mat4 nodeMatrix = node->matrix;
+			glm::mat4 nodeMatrix = node->getLocalMatrix();
 			VulkanglTFModel::Node* currentParent = node->parent;
-			while (currentParent) {
-				nodeMatrix = currentParent->matrix * nodeMatrix;
+			while (currentParent) 
+			{
+				// nodeMatrix = currentParent->matrix * nodeMatrix;
+				nodeMatrix = currentParent->getLocalMatrix() * nodeMatrix;
 				currentParent = currentParent->parent;
 			}
 			// Pass the final matrix to the vertex shader using push constants
 			vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
-			for (VulkanglTFModel::Primitive& primitive : node->mesh.primitives) {
-				if (primitive.indexCount > 0) {
+			for (VulkanglTFModel::Primitive& primitive : node->mesh.primitives) 
+			{
+				if (primitive.indexCount > 0) 
+				{
 					// Get the texture index for this primitive
 					VulkanglTFModel::Texture texture = textures[materials[primitive.materialIndex].baseColorTextureIndex];
 					// Bind the descriptor for the current primitive's texture
@@ -669,7 +671,8 @@ public:
 				}
 			}
 		}
-		for (auto& child : node->children) {
+		for (auto& child : node->children) 
+		{
 			drawNode(commandBuffer, pipelineLayout, child);
 		}
 	}
@@ -717,7 +720,7 @@ public:
 	struct DescriptorSetLayouts {
 		VkDescriptorSetLayout matrices;
 		VkDescriptorSetLayout textures;
-		VkDescriptorSetLayout jointMatrices;
+		// VkDescriptorSetLayout jointMatrices;
 	} descriptorSetLayouts;
 
 	VulkanExample() : VulkanExampleBase(ENABLE_VALIDATION)
@@ -823,11 +826,7 @@ public:
 				const tinygltf::Node node = glTFInput.nodes[scene.nodes[i]];
 				glTFModel.loadNode(node, glTFInput, nullptr,  scene.nodes[i], indexBuffer, vertexBuffer);
 			}
-			glTFModel.loadSkins(glTFInput);
 			glTFModel.loadAnimations(glTFInput);
-			for ( auto node : glTFModel.nodes ){
-				glTFModel.updateJoints(node);
-			}
 		}
 		else {
 			vks::tools::exitFatal("Could not open the glTF file.\n\nThe file is part of the additional asset pack.\n\nRun \"download_assets.py\" in the repository root to download the latest version.", -1);
@@ -910,6 +909,7 @@ public:
 	void loadAssets()
 	{
 		loadglTFFile(getAssetPath() + "buster_drone/busterDrone.gltf");
+		// loadglTFFile(getAssetPath() + "models/CesiumMan/glTF/CesiumMan.gltf");
 	}
 
 	void setupDescriptors()
@@ -923,10 +923,10 @@ public:
 			// One combined image sampler per model image/texture
 			vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(glTFModel.images.size())),
 			// One ssbo per skin
-			vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, static_cast<uint32_t>(glTFModel.skins.size())),
+			// vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, static_cast<uint32_t>(glTFModel.skins.size())),
 		};
 		// One set for matrices and one per model image/texture
-		const uint32_t maxSetCount = static_cast<uint32_t>(glTFModel.images.size()) + static_cast<uint32_t>(glTFModel.skins.size()) + 1;
+		const uint32_t maxSetCount = static_cast<uint32_t>(glTFModel.images.size()) + 1;
 		VkDescriptorPoolCreateInfo descriptorPoolInfo = vks::initializers::descriptorPoolCreateInfo(poolSizes, maxSetCount);
 		VK_CHECK_RESULT(vkCreateDescriptorPool(device, &descriptorPoolInfo, nullptr, &descriptorPool));
 
@@ -939,13 +939,9 @@ public:
 		setLayoutBinding = vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0);
 		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.textures));
 		
-		// Descriptor set layout for pass skin joint matrices
-		setLayoutBinding = vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0);
-		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.jointMatrices));
-
-
+		
 		// Pipeline layout using both descriptor sets (set 0 = matrices, set 1 = material)
-		std::array<VkDescriptorSetLayout, 3> setLayouts = { descriptorSetLayouts.matrices, descriptorSetLayouts.textures, descriptorSetLayouts.jointMatrices };
+		std::array<VkDescriptorSetLayout, 2> setLayouts = { descriptorSetLayouts.matrices, descriptorSetLayouts.textures };
 		VkPipelineLayoutCreateInfo pipelineLayoutCI= vks::initializers::pipelineLayoutCreateInfo(setLayouts.data(), static_cast<uint32_t>(setLayouts.size()));
 		
 		// We will use push constants to push the local matrices of a primitive to the vertex shader
@@ -962,13 +958,6 @@ public:
 		VkWriteDescriptorSet writeDescriptorSet = vks::initializers::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &shaderData.buffer.descriptor);
 		vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
 
-		// Descriptor sets for skin joint matrices
-		for (auto& skin : glTFModel.skins) {
-			const VkDescriptorSetAllocateInfo allocInfo = vks::initializers::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayouts.jointMatrices, 1);
-			VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &allocInfo, &skin.descriptorSet));
-			VkWriteDescriptorSet writeDescriptorSet = vks::initializers::writeDescriptorSet(skin.descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 0, &skin.ssbo.descriptor);
-			vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
-		}
 
 		// Descriptor sets for materials
 		for (auto& image : glTFModel.images) {
@@ -1083,6 +1072,7 @@ public:
 		if (!paused)
 		{
 			glTFModel.updateAnimation(frameTimer);
+			buildCommandBuffers();
 		}
 	}
 
