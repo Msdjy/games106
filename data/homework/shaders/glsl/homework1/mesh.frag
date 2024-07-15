@@ -1,6 +1,10 @@
 #version 450
 
 layout (set = 1, binding = 0) uniform sampler2D samplerColorMap;
+// layout (set = 1, binding = 1) uniform sampler2D samplerMetallicRoughnessMap;
+// layout (set = 1, binding = 2) uniform sampler2D samplerNormalMap;
+// layout (set = 1, binding = 3) uniform sampler2D samplerEmissiveMap;
+// layout (set = 1, binding = 4) uniform sampler2D samplerAcclusionMap;
 
 layout (location = 0) in vec3 inNormal;
 layout (location = 1) in vec3 inColor;
@@ -9,6 +13,18 @@ layout (location = 3) in vec3 inViewVec;
 layout (location = 4) in vec3 inLightVec;
 
 layout (location = 0) out vec4 outFragColor;
+
+
+// vec3 calculateNormal()
+// {
+// 	vec3 tangentNormal = texture(normalMap, inUV).xyz * 2.0 - 1.0;
+
+// 	vec3 N = normalize(inNormal);
+// 	vec3 T = normalize(inTangent.xyz);
+// 	vec3 B = normalize(cross(N, T));
+// 	mat3 TBN = mat3(T, B, N);
+// 	return normalize(TBN * tangentNormal);
+// }
 
 void main() 
 {
