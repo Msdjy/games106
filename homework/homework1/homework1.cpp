@@ -248,16 +248,16 @@ public:
 				materials[i].metallicRoughnessTextureIndex = glTFMaterial.values["metallicRoughnessTexture"].TextureIndex();
 			}
 			// Get normal texture index
-			if (glTFMaterial.values.find("normalTexture") != glTFMaterial.values.end()) {
-				materials[i].normalTextureIndex = glTFMaterial.values["normalTexture"].TextureIndex();
+			if (glTFMaterial.normalTexture.index != -1) {
+				materials[i].normalTextureIndex = glTFMaterial.normalTexture.index;
 			}
 			// Get emissive texture index
-			if (glTFMaterial.values.find("emissiveTexture") != glTFMaterial.values.end()) {
-				materials[i].emissiveTextureIndex = glTFMaterial.values["emissiveTexture"].TextureIndex();
+			if (glTFMaterial.emissiveTexture.index != -1) {
+				materials[i].emissiveTextureIndex = glTFMaterial.emissiveTexture.index;
 			}
 			// Get occlusion texture index
-			if (glTFMaterial.values.find("occlusionTexture") != glTFMaterial.values.end()) {
-				materials[i].occlusionTextureIndex = glTFMaterial.values["occlusionTexture"].TextureIndex();
+			if (glTFMaterial.occlusionTexture.index != -1) {
+				materials[i].occlusionTextureIndex = glTFMaterial.occlusionTexture.index;
 			}
 		}
 	}
@@ -968,7 +968,7 @@ public:
 		
 		// Pipeline layout using both descriptor sets (set 0 = matrices, set 1 = material)
 		std::array<VkDescriptorSetLayout, 2> setLayouts = { descriptorSetLayouts.matrices, descriptorSetLayouts.textures };
-		VkPipelineLayoutCreateInfo pipelineLayoutCI= vks::initializers::pipelineLayoutCreateInfo(setLayouts.data(), static_cast<uint32_t>(setLayouts.size()));
+		VkPipelineLayoutCreateInfo pipelineLayoutCI = vks::initializers::pipelineLayoutCreateInfo(setLayouts.data(), static_cast<uint32_t>(setLayouts.size()));
 		
 		// We will use push constants to push the local matrices of a primitive to the vertex shader
 		VkPushConstantRange pushConstantRange = vks::initializers::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0);
@@ -994,7 +994,8 @@ public:
 		// }
 
 		// Descriptor sets for materials
-		for (auto& mat : glTFModel.materials) {
+		for (auto& mat : glTFModel.materials) 
+		{
 			const VkDescriptorSetAllocateInfo allocInfo = vks::initializers::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayouts.textures, 1);
 			VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &allocInfo, &mat.descriptorSet));
 
