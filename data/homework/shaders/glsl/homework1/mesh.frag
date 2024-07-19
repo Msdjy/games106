@@ -77,7 +77,7 @@ vec3 specularContribution(vec3 L, vec3 V, vec3 N, vec3 F0, float metallic, float
 	// Gamma correction
 	color = pow(color, vec3(1.0f / 2.2));
 
-	return N;
+	return vec3(dotNV);
 }
 
 void main() 
