@@ -15,6 +15,8 @@ layout (location = 5) in vec4 inTangent;
 
 layout (location = 0) out vec4 outFragColor;
 
+#define PI 3.1415926535897932384626433832795
+
 
 vec3 calculateNormal()
 {
@@ -27,7 +29,56 @@ vec3 calculateNormal()
 	return normalize(TBN * tangentNormal);
 }
 
+float D_GGX(float dotNH, float roughness)
+{
+	float alpha = roughness * roughness;
+	float alpha2 = alpha * alpha;
+	float nom = alpha2;
+	float denom = dotNH * dotNH * (alpha2 - 1.0) + 1.0;
+	return nom / (PI * denom * denom);
+}
 
+vec3 F_fresnel(float dotNV, vec3 F0) 
+{
+	return F0 + (1.0 - F0) * pow(1.0 - clamp(dotNV, 0.0, 1.0), 5.0);
+}	
+
+float G_Schlick(float dotNL, float dotNV, float roughness)
+{	
+	float alpha = roughness + 1.0;
+	float k = alpha * alpha / 8.0;
+
+	float GNL = dotNL / (dotNL * (1.0 - k) + k);
+	float GNV = dotNV / (dotNV * (1.0 - k) + k);
+	return GNL * GNV;
+}
+
+vec3 specularContribution(vec3 L, vec3 V, vec3 N, vec3 F0, float metallic, float roughness)
+{
+	vec3 H = normalize(L + V);
+	float dotNH = clamp(dot(N, H), 0.0, 1.0);
+	float dotNV = clamp(dot(N, V), 0.0, 1.0);
+	float dotNL = clamp(dot(N, L), 0.0, 1.0);
+
+	float D = D_GGX(dotNH, roughness);
+	vec3 F = F_fresnel(dotNV, F0);
+	float G = G_Schlick(dotNL, dotNV, roughness);
+
+	vec3 spec = D * F * G / (4.0 * dotNL * dotNV);
+
+	vec3 ks = F;
+	vec3 kd = vec3(1.0) - ks;
+	kd *= (1.0 - metallic); 
+
+
+	vec3 brdf = (kd * texture(samplerColorMap, inUV).rgb / PI + spec);
+	vec3 color = brdf * dotNL;
+
+	// Gamma correction
+	color = pow(color, vec3(1.0f / 2.2));
+
+	return N;
+}
 
 void main() 
 {
@@ -41,11 +92,19 @@ void main()
 	float metallic = texture(samplerMetallicRoughnessMap, inUV).b;
 	float roughness = texture(samplerMetallicRoughnessMap, inUV).g;
 	float ao = texture(samplerMetallicRoughnessMap, inUV).r;
-	float emissive = texture(samplerEmissiveMap, inUV).rgb;
+	vec3 emissive = texture(samplerEmissiveMap, inUV).rgb;
+
+	vec3 F0 = vec3(0.04);
+	F0 = mix(F0, color.rgb, metallic);
+
+	vec3 Lo = vec3(0.0);
+	Lo = specularContribution(L, V, N, F0, metallic, roughness);
+
+	
+	
 
 
-
-	vec3 diffuse = max(dot(N, L), 0.15) * inColor;
-	vec3 specular = pow(max(dot(R, V), 0.0), 16.0) * vec3(0.75);
-	outFragColor = vec4(diffuse * color.rgb + specular, 1.0);		
+	// vec3 diffuse = max(dot(N, L), 0.15) * inColor;
+	// vec3 specular = pow(max(dot(R, V), 0.0), 16.0) * vec3(0.75);
+	outFragColor = vec4(Lo, 1.0);		
 }
