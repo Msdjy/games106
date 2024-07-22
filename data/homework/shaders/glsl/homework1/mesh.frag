@@ -16,6 +16,7 @@ layout (location = 5) in vec4 inTangent;
 layout (location = 0) out vec4 outFragColor;
 
 #define PI 3.1415926535897932384626433832795
+// #define ALBEDO pow(texture(samplerColorMap, inUV).rgb, vec3(1.0 / 2.2))
 
 
 vec3 calculateNormal()
@@ -70,14 +71,15 @@ vec3 specularContribution(vec3 L, vec3 V, vec3 N, vec3 F0, float metallic, float
 	vec3 kd = vec3(1.0) - ks;
 	kd *= (1.0 - metallic); 
 
+	vec3 albedo = texture(samplerColorMap, inUV).rgb;
 
-	vec3 brdf = (kd * texture(samplerColorMap, inUV).rgb / PI + spec);
+	vec3 brdf = (kd * albedo / PI + spec);
 	vec3 color = brdf * dotNL;
 
 	// Gamma correction
-	color = pow(color, vec3(1.0f / 2.2));
-
-	return vec3(dotNV);
+	
+	return kd;
+	// return vec3(dotNV);
 }
 
 void main() 
@@ -106,5 +108,7 @@ void main()
 
 	// vec3 diffuse = max(dot(N, L), 0.15) * inColor;
 	// vec3 specular = pow(max(dot(R, V), 0.0), 16.0) * vec3(0.75);
+	
+	Lo = pow(Lo, vec3(1.0 / 2.2));
 	outFragColor = vec4(Lo, 1.0);		
 }
