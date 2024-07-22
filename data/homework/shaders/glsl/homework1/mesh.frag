@@ -110,5 +110,5 @@ void main()
 	// vec3 specular = pow(max(dot(R, V), 0.0), 16.0) * vec3(0.75);
 	
 	Lo = pow(Lo, vec3(1.0 / 2.2));
-	outFragColor = vec4(Lo, 1.0);		
+	outFragColor = vec4(V, 1.0);		
 }

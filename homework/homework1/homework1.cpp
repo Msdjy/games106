@@ -718,7 +718,7 @@ public:
 		struct Values {
 			glm::mat4 projection;
 			glm::mat4 model;
-			glm::vec4 lightPos = glm::vec4(5.0f, 5.0f, -5.0f, 1.0f);
+			glm::vec4 lightPos = glm::vec4(5.0f, 0.0f, -0.0f, 1.0f);
 			glm::vec4 viewPos;
 		} values;
 	} shaderData;
@@ -742,8 +742,8 @@ public:
 		title = "homework1";
 		camera.type = Camera::CameraType::lookat;
 		camera.flipY = true;
-		camera.setPosition(glm::vec3(0.0f, -0.1f, -1.0f));
-		camera.setRotation(glm::vec3(0.0f, 45.0f, 0.0f));
+		camera.setPosition(glm::vec3(0.0f, -0.0f, -5.0f));
+		camera.setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 		camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 256.0f);
 	}
 
@@ -944,7 +944,7 @@ public:
 		VK_CHECK_RESULT(vkCreateDescriptorPool(device, &descriptorPoolInfo, nullptr, &descriptorPool));
 
 		// Descriptor set layout for passing matrices
-		VkDescriptorSetLayoutBinding setLayoutBinding = vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0);
+		VkDescriptorSetLayoutBinding setLayoutBinding = vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0);
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI = vks::initializers::descriptorSetLayoutCreateInfo(&setLayoutBinding, 1);
 		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.matrices));
 
