@@ -32,9 +32,9 @@ void main()
 	outUV = inUV;
 	gl_Position = uboScene.projection * uboScene.view * primitive.model * vec4(inPos.xyz, 1.0);
 	
-	vec4 pos = primitive.model * vec4(inPos, 1.0);
-	outNormal = mat3(primitive.model) * inNormal;
+	vec4 pos = uboScene.view * primitive.model * vec4(inPos, 1.0);
+	outNormal = mat3(uboScene.view) * mat3(primitive.model) * inNormal;
 	outLightVec = uboScene.lightPos.xyz - pos.xyz;
-	outViewVec = uboScene.viewPos.xyz - pos.xyz;	
-	outTangent = vec4(mat3(primitive.model) * inTangent.xyz, inTangent.w);
+	outViewVec = -pos.xyz;	
+	outTangent = vec4(mat3(uboScene.view) * mat3(primitive.model) * inTangent.xyz, inTangent.w);
 }
